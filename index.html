@@ -1,37 +1,41 @@
 <!DOCTYPE html>
 <head>
-    <style>
-.main {
-  display: flex;
-  flex-direction: column;
-}
-#preview {
-  margin-top: 1em;
-  white-space: pre;
-  max-width: 80ch;
-  border: 1px solid #cecece;
-}
-@media print {
-    section {
-       display: none;
+  <style>
+    .main {
+      display: flex;
+      flex-direction: column;
     }
     #preview {
-       border: none;
-       max-width: 100%;
+      margin-top: 1em;
+      white-space: pre;
+      max-width: 80ch;
+      border: 1px solid #cecece;
     }
-    div {
-       break-inside: avoid;
+    @media print {
+      section {
+        display: none;
+      }
+      #preview {
+        border: none;
+        max-width: 100%;
+      }
+      div {
+        break-inside: avoid;
+      }
     }
-}
-    </style>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </style>
+  <script
+    id="MathJax-script"
+    async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  ></script>
 </head>
 <body>
-    <div class="main">
-        <section>
-            <label>
-            Задачи <br/>
-            <textarea id="template" rows="30", cols="80">
+  <div class="main">
+    <section>
+      <label>
+        Задачи <br />
+        <textarea id="template" rows="30" , cols="80">
 Задача 1
 Намерете числената стойност на израза:
 $$ A=(x-$1)^2 , за x=$2 $$
@@ -42,44 +46,55 @@ $$ A=(x-$1)^2 , за x=$2 $$
 4,5
 5,6
 6,7
-            </textarea>
-            </label>
-            <br/>
-            <button id="generate">Генерирай</button>
-            <button id="print" onclick="window.print();">Печат</button>
-        </section>
-        <div id="preview"></div>
-    </div>
-<script>
+            </textarea
+        >
+      </label>
+      <br />
+      <button id="generate">Генерирай</button>
+      <button id="print" onclick="window.print();">Печат</button>
+    </section>
+    <div id="preview"></div>
+  </div>
+  <script>
+    const generate = document.querySelector("#generate");
+    const template = document.querySelector("#template");
+    const preview = document.querySelector("#preview");
 
-const generate = document.querySelector('#generate');
-const template = document.querySelector('#template');
-const preview = document.querySelector('#preview');
+    const process = (text, params) =>
+      Object.keys(params).reduce((p, k) => {
+        return p.replaceAll(k, params[k]);
+      }, text);
 
-const process = (text, params) => Object.keys(params).reduce((p, k) => {
-    return p.replaceAll(k, params[k]);
-}, text)
+    const getParams = (text) =>
+      text.split("\n").map((r) =>
+        r.split(",").reduce((a, v, i) => {
+          a[`$${i + 1}`] = v;
+          return a;
+        }, {})
+      );
 
-const getParams = text => text.split("\n").map(r => r.split(',').reduce((a, v, i) => {
-    a[`$${i+1}`]=v;
-    return a;
-}, {}))
+    const getRandom = (items) =>
+      items[Math.floor(Math.random() * items.length)];
 
-const getRandom = items => items[Math.floor(Math.random() * items.length)];
+    generate.addEventListener("click", (e) => {
+      e.preventDefault();
+      const text = template.value.trim();
+      const tasks = text.split("===");
+      preview.innerHTML = tasks
+        .map((t) => {
+          if (t.trim()) {
+            [tmpl, params] = t.split("---");
+            const par = getParams((params || "").trim());
 
-generate.addEventListener('click', (e) => {
-    e.preventDefault();
-    const text = template.value.trim();
-    const tasks = text.split('===');
-    preview.innerHTML = tasks.map(t => {
-        if (t.trim()) {
-            [tmpl, params] = t.split('---');
-            const par = getParams(params.trim());
-            return `<div class="task">${process(tmpl, getRandom(par))}</div>`;
-        }
-        return '';
-    }).join("\n").trim();
-    window.MathJax.typeset();
-});
-</script>
+            return par
+              ? `<div class="task">${process(tmpl, getRandom(par))}</div>`
+              : tmpl;
+          }
+          return "";
+        })
+        .join("\n")
+        .trim();
+      window.MathJax.typeset();
+    });
+  </script>
 </body>
