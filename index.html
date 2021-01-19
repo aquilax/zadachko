@@ -70,10 +70,12 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         return p.replaceAll(k, params[k]);
       }, text);
 
+    const formatParam = p => p.replaceAll('.', ',');
+
     const getParams = (text) =>
       text.split("\n").map((r) =>
         r.split(",").reduce((a, v, i) => {
-          a[`$${i + 1}`] = v;
+          a[`$${i + 1}`] = formatParam(v);
           return a;
         }, {})
       );
