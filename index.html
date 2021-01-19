@@ -84,7 +84,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
     const getParts = (text) => {
       const a = text.split("---");
       if (a.length === 1) {
-        return { problem: t, solution: "", answer: "", params: "" };
+        return { problem: text, solution: "", answer: "", params: "" };
       }
       const params = a.slice(-1).pop();
       const [problem, solution, answer] = a.slice(0, -1);
