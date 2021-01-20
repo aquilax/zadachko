@@ -55,22 +55,27 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         >
       </label>
       <br />
-      <button id="generate">Генерирай</button>
+      <button id="generate-test">Генерирай тест</button>
+      <button id="generate-all">Генерирай всичко</button>
       <button id="print" onclick="window.print();">Печат</button>
     </section>
     <div id="preview"></div>
   </div>
   <script>
-    const generate = document.querySelector("#generate");
+    const generateTest = document.querySelector("#generate-test")
+    const generateAll = document.querySelector("#generate-all")
     const template = document.querySelector("#template");
     const preview = document.querySelector("#preview");
+
+    const TEST = 0;
+    const ALL = 1;
 
     const process = (text, params) =>
       Object.keys(params).reduce((p, k) => {
         return p.replaceAll(k, params[k]);
       }, text);
 
-    const formatParam = p => p.replaceAll('.', ',');
+    const formatParam = (p) => p.replaceAll(".", ",");
 
     const getParams = (text) =>
       text.split("\n").map((r) =>
@@ -98,7 +103,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       };
     };
 
-    generate.addEventListener("click", (e) => {
+    const getGenerator = generatorType => e => {
       e.preventDefault();
       const text = template.value.trim();
       const tasks = text.split("===");
@@ -108,14 +113,23 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
             const { problem, solution, answer, params } = getParts(t.trim());
             const par = getParams(params.trim());
 
-            const body = [
+            let bodyElements = [];
+            if (generatorType === TEST) {
+              bodyElements = [
+              `Задача:
+${problem}`,
+              ];
+            }
+            if (generatorType === ALL) {
+              bodyElements= [
               `Задача:
 ${problem}`,
               `Решение:
 ${solution}`,
-              `Отговор: ${answer}`]
-              .filter((v) => v)
-              .join("\n");
+              `Отговор: ${answer}`,
+              ];
+            }
+            const body = bodyElements.filter((v) => v).join("\n");
             return par
               ? `<div class="task">${process(body, getRandom(par))}</div>`
               : tmpl;
@@ -125,6 +139,8 @@ ${solution}`,
         .join("\n")
         .trim();
       window.MathJax.typeset();
-    });
+    }
+    generateTest.addEventListener("click", getGenerator(TEST));
+    generateAll.addEventListener("click", getGenerator(ALL));
   </script>
 </body>
