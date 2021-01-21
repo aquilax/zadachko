@@ -5,9 +5,9 @@
       display: flex;
       flex-direction: column;
     }
-    #preview {
+    .preview {
       margin-top: 1em;
-      white-space: pre;
+      /* white-space: pre; */
       max-width: 80ch;
       border: 1px solid #cecece;
     }
@@ -15,7 +15,7 @@
       section {
         display: none;
       }
-      #preview {
+      .preview {
         border: none;
         max-width: 100%;
       }
@@ -33,9 +33,42 @@
 <body>
   <div class="main">
     <section>
-      <label>
-        Задачи <br />
-        <textarea id="template" rows="30" , cols="80">
+      <details>
+        <summary>Редактор</summary>
+        <form>
+          <label>
+            Условие <br />
+            <textarea id="problem" rows="5" , cols="80"></textarea>
+          </label>
+          <br />
+          <label>
+            Решение <br />
+            <textarea id="solution" rows="5" , cols="80"></textarea>
+          </label>
+          <br />
+          <label>
+            Отговор <br />
+            <textarea id="answer" rows="3" , cols="80"></textarea>
+          </label>
+          <br />
+          <label>
+            Параметри <br />
+            <textarea id="params" rows="7" , cols="80"></textarea>
+          </label>
+          <div id="draft" class="preview"></div>
+          <label>
+            Резултат <br />
+            <textarea id="output" rows="10" , cols="80" readonly></textarea>
+          </label>
+        </form>
+      </details>
+    </section>
+    <section>
+      <details open>
+        <summary>Генератор</summary>
+        <label>
+          Задачи <br />
+          <textarea id="template" rows="30" , cols="80">
 Намерете числената стойност на израза:
 $$ A = ( x - $1 )^2 , за x = $2 $$
 ---
@@ -51,21 +84,29 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
 5,6,1
 6,7,1
 ===
-            </textarea
-        >
-      </label>
-      <br />
-      <button id="generate-test">Генерирай тест</button>
-      <button id="generate-all">Генерирай всичко</button>
-      <button id="print" onclick="window.print();">Печат</button>
+              </textarea
+          >
+        </label>
+        <br />
+        <button id="generate-test">Генерирай тест</button>
+        <button id="generate-all">Генерирай всичко</button>
+        <button id="print" onclick="window.print();">Печат</button>
+      </details>
     </section>
-    <div id="preview"></div>
+    <div id="preview" class="preview"></div>
   </div>
   <script>
-    const generateTest = document.querySelector("#generate-test")
-    const generateAll = document.querySelector("#generate-all")
+    const $problem = document.querySelector("#problem");
+    const $solution = document.querySelector("#solution");
+    const $answer = document.querySelector("#answer");
+    const $params = document.querySelector("#params");
+    const $draft = document.querySelector("#draft");
+    const $output = document.querySelector("#output");
+
+    const generateTest = document.querySelector("#generate-test");
+    const generateAll = document.querySelector("#generate-all");
     const template = document.querySelector("#template");
-    const preview = document.querySelector("#preview");
+    const $preview = document.querySelector("#preview");
 
     const TEST = 0;
     const ALL = 1;
@@ -103,44 +144,70 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       };
     };
 
-    const getGenerator = generatorType => e => {
+    const generateItem = (generatorType, { problem, solution, answer, params }) => {
+      const par = getParams(params.trim());
+      let bodyElements = [];
+      if (generatorType === TEST) {
+        bodyElements = [
+          `<h3>Задача</h3> ${problem}`,
+        ];
+      }
+      if (generatorType === ALL) {
+        bodyElements = [
+          `<h3>Задача</h3> ${problem}`,
+          `<h4>Решение</h4> ${solution}`,
+          `<h4>Отговор</h4> ${answer}`,
+        ];
+      }
+      const body = bodyElements.filter((v) => v).join("\n");
+      return par
+        ? `<div class="task">${process(body, getRandom(par))}</div>`
+        : tmpl;
+    };
+
+    const getGenerator = (generatorType) => (e) => {
       e.preventDefault();
       const text = template.value.trim();
       const tasks = text.split("===");
-      preview.innerHTML = tasks
+      $preview.innerHTML = tasks
         .map((t) => {
           if (t.trim()) {
-            const { problem, solution, answer, params } = getParts(t.trim());
-            const par = getParams(params.trim());
-
-            let bodyElements = [];
-            if (generatorType === TEST) {
-              bodyElements = [
-              `Задача:
-${problem}`,
-              ];
-            }
-            if (generatorType === ALL) {
-              bodyElements= [
-              `Задача:
-${problem}`,
-              `Решение:
-${solution}`,
-              `Отговор: ${answer}`,
-              ];
-            }
-            const body = bodyElements.filter((v) => v).join("\n");
-            return par
-              ? `<div class="task">${process(body, getRandom(par))}</div>`
-              : tmpl;
+            return generateItem(generatorType, getParts(t.trim()))
           }
           return "";
         })
         .join("\n")
         .trim();
-      window.MathJax.typeset();
-    }
+      window.MathJax.typeset([$preview]);
+    };
+
+    const previewEditor = e => {
+      const data = {
+        problem: $problem.value.trim(),
+        solution: $solution.value.trim(),
+        answer:$answer.value.trim(),
+        params: $params.value.trim()
+      }
+      $draft.innerHTML = generateItem(ALL, data);
+      output.value = [
+        data.problem,
+        '---',
+        data.solution,
+        '---',
+        data.answer,
+        '---',
+        data.params,
+        '===',
+      ].join("\n")
+      window.MathJax.typeset([$draft]);
+    };
+
     generateTest.addEventListener("click", getGenerator(TEST));
     generateAll.addEventListener("click", getGenerator(ALL));
+
+    $problem.addEventListener("input", previewEditor);
+    $solution.addEventListener("input", previewEditor);
+    $answer.addEventListener("input", previewEditor);
+    $params.addEventListener("input", previewEditor);
   </script>
 </body>
