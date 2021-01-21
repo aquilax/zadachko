@@ -1,74 +1,78 @@
 <!DOCTYPE html>
-<head>
-  <style>
-    .main {
-      display: flex;
-      flex-direction: column;
-    }
-    .preview {
-      margin-top: 1em;
-      /* white-space: pre; */
-      max-width: 80ch;
-      border: 1px solid #cecece;
-    }
-    @media print {
-      section {
-        display: none;
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Задачко</title>
+    <style>
+      .main {
+        display: flex;
+        flex-direction: column;
       }
       .preview {
-        border: none;
-        max-width: 100%;
+        margin-top: 1em;
+        /* white-space: pre; */
+        max-width: 80ch;
+        border: 1px solid #cecece;
       }
-      div {
-        break-inside: avoid;
+      @media print {
+        section {
+          display: none;
+        }
+        .preview {
+          border: none;
+          max-width: 100%;
+        }
+        div {
+          break-inside: avoid;
+        }
       }
-    }
-  </style>
-  <script
-    id="MathJax-script"
-    async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
-  ></script>
-</head>
-<body>
-  <div class="main">
-    <section>
-      <details>
-        <summary>Редактор</summary>
-        <form>
+    </style>
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+  </head>
+  <body>
+    <div class="main">
+      <section>
+        <details>
+          <summary>Редактор</summary>
+          <form>
+            <label>
+              Условие <br />
+              <textarea id="problem" rows="5" , cols="80"></textarea>
+            </label>
+            <br />
+            <label>
+              Решение <br />
+              <textarea id="solution" rows="5" , cols="80"></textarea>
+            </label>
+            <br />
+            <label>
+              Отговор <br />
+              <textarea id="answer" rows="3" , cols="80"></textarea>
+            </label>
+            <br />
+            <label>
+              Параметри <br />
+              <textarea id="params" rows="7" , cols="80"></textarea>
+            </label>
+            <div id="draft" class="preview"></div>
+            <label>
+              Резултат <br />
+              <textarea id="output" rows="10" , cols="80" readonly></textarea>
+            </label>
+          </form>
+        </details>
+      </section>
+      <section>
+        <details open>
+          <summary>Генератор</summary>
           <label>
-            Условие <br />
-            <textarea id="problem" rows="5" , cols="80"></textarea>
-          </label>
-          <br />
-          <label>
-            Решение <br />
-            <textarea id="solution" rows="5" , cols="80"></textarea>
-          </label>
-          <br />
-          <label>
-            Отговор <br />
-            <textarea id="answer" rows="3" , cols="80"></textarea>
-          </label>
-          <br />
-          <label>
-            Параметри <br />
-            <textarea id="params" rows="7" , cols="80"></textarea>
-          </label>
-          <div id="draft" class="preview"></div>
-          <label>
-            Резултат <br />
-            <textarea id="output" rows="10" , cols="80" readonly></textarea>
-          </label>
-        </form>
-      </details>
-    </section>
-    <section>
-      <details open>
-        <summary>Генератор</summary>
-        <label>
-          Задачи <br />
-          <textarea id="template" rows="30" , cols="80">
+            Задачи <br />
+            <textarea id="template" rows="30" , cols="80">
 Намерете числената стойност на израза:
 $$ A = ( x - $1 )^2 , за x = $2 $$
 ---
@@ -85,129 +89,131 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
 6,7,1
 ===
               </textarea
-          >
-        </label>
-        <br />
-        <button id="generate-test">Генерирай тест</button>
-        <button id="generate-all">Генерирай всичко</button>
-        <button id="print" onclick="window.print();">Печат</button>
-      </details>
-    </section>
-    <div id="preview" class="preview"></div>
-  </div>
-  <script>
-    const $problem = document.querySelector("#problem");
-    const $solution = document.querySelector("#solution");
-    const $answer = document.querySelector("#answer");
-    const $params = document.querySelector("#params");
-    const $draft = document.querySelector("#draft");
-    const $output = document.querySelector("#output");
+            >
+          </label>
+          <br />
+          <button id="generate-test">Генерирай тест</button>
+          <button id="generate-all">Генерирай всичко</button>
+          <button id="print" onclick="window.print();">Печат</button>
+        </details>
+      </section>
+      <div id="preview" class="preview"></div>
+    </div>
+    <script>
+      const $problem = document.querySelector("#problem");
+      const $solution = document.querySelector("#solution");
+      const $answer = document.querySelector("#answer");
+      const $params = document.querySelector("#params");
+      const $draft = document.querySelector("#draft");
+      const $output = document.querySelector("#output");
 
-    const generateTest = document.querySelector("#generate-test");
-    const generateAll = document.querySelector("#generate-all");
-    const template = document.querySelector("#template");
-    const $preview = document.querySelector("#preview");
+      const generateTest = document.querySelector("#generate-test");
+      const generateAll = document.querySelector("#generate-all");
+      const template = document.querySelector("#template");
+      const $preview = document.querySelector("#preview");
 
-    const TEST = 0;
-    const ALL = 1;
+      const TEST = 0;
+      const ALL = 1;
 
-    const process = (text, params) =>
-      Object.keys(params).reduce((p, k) => {
-        return p.replaceAll(k, params[k]);
-      }, text);
+      const process = (text, params) =>
+        Object.keys(params).reduce((p, k) => {
+          return p.replaceAll(k, params[k]);
+        }, text);
 
-    const formatParam = (p) => p.replaceAll(".", ",");
+      const formatParam = (p) => p.replaceAll(".", ",");
 
-    const getParams = (text) =>
-      text.split("\n").map((r) =>
-        r.split(",").reduce((a, v, i) => {
-          a[`$${i + 1}`] = formatParam(v);
-          return a;
-        }, {})
-      );
+      const getParams = (text) =>
+        text.split("\n").map((r) =>
+          r.split(",").reduce((a, v, i) => {
+            a[`$${i + 1}`] = formatParam(v);
+            return a;
+          }, {})
+        );
 
-    const getRandom = (items) =>
-      items[Math.floor(Math.random() * items.length)];
+      const getRandom = (items) =>
+        items[Math.floor(Math.random() * items.length)];
 
-    const getParts = (text) => {
-      const a = text.split("---");
-      if (a.length === 1) {
-        return { problem: text, solution: "", answer: "", params: "" };
-      }
-      const params = a.slice(-1).pop();
-      const [problem, solution, answer] = a.slice(0, -1);
-      return {
-        problem: (problem || "").trim(),
-        solution: (solution || "").trim(),
-        answer: (answer || "").trim(),
-        params: params,
+      const getParts = (text) => {
+        const a = text.split("---");
+        if (a.length === 1) {
+          return { problem: text, solution: "", answer: "", params: "" };
+        }
+        const params = a.slice(-1).pop();
+        const [problem, solution, answer] = a.slice(0, -1);
+        return {
+          problem: (problem || "").trim(),
+          solution: (solution || "").trim(),
+          answer: (answer || "").trim(),
+          params: params,
+        };
       };
-    };
 
-    const generateItem = (generatorType, { problem, solution, answer, params }) => {
-      const par = getParams(params.trim());
-      let bodyElements = [];
-      if (generatorType === TEST) {
-        bodyElements = [
-          `<h3>Задача</h3> ${problem}`,
-        ];
-      }
-      if (generatorType === ALL) {
-        bodyElements = [
-          `<h3>Задача</h3> ${problem}`,
-          `<h4>Решение</h4> ${solution}`,
-          `<h4>Отговор</h4> ${answer}`,
-        ];
-      }
-      const body = bodyElements.filter((v) => v).join("\n");
-      return par
-        ? `<div class="task">${process(body, getRandom(par))}</div>`
-        : tmpl;
-    };
+      const generateItem = (
+        generatorType,
+        { problem, solution, answer, params }
+      ) => {
+        const par = getParams(params.trim());
+        let bodyElements = [];
+        if (generatorType === TEST) {
+          bodyElements = [`<h3>Задача</h3> ${problem}`];
+        }
+        if (generatorType === ALL) {
+          bodyElements = [
+            `<h3>Задача</h3> ${problem}`,
+            `<h4>Решение</h4> ${solution}`,
+            `<h4>Отговор</h4> ${answer}`,
+          ];
+        }
+        const body = bodyElements.filter((v) => v).join("\n");
+        return par
+          ? `<div class="task">${process(body, getRandom(par))}</div>`
+          : tmpl;
+      };
 
-    const getGenerator = (generatorType) => (e) => {
-      e.preventDefault();
-      const text = template.value.trim();
-      const tasks = text.split("===");
-      $preview.innerHTML = tasks
-        .map((t) => {
-          if (t.trim()) {
-            return generateItem(generatorType, getParts(t.trim()))
-          }
-          return "";
-        })
-        .join("\n")
-        .trim();
-      window.MathJax.typeset([$preview]);
-    };
+      const getGenerator = (generatorType) => (e) => {
+        e.preventDefault();
+        const text = template.value.trim();
+        const tasks = text.split("===");
+        $preview.innerHTML = tasks
+          .map((t) => {
+            if (t.trim()) {
+              return generateItem(generatorType, getParts(t.trim()));
+            }
+            return "";
+          })
+          .join("\n")
+          .trim();
+        window.MathJax.typeset([$preview]);
+      };
 
-    const previewEditor = e => {
-      const data = {
-        problem: $problem.value.trim(),
-        solution: $solution.value.trim(),
-        answer:$answer.value.trim(),
-        params: $params.value.trim()
-      }
-      $draft.innerHTML = generateItem(ALL, data);
-      output.value = [
-        data.problem,
-        '---',
-        data.solution,
-        '---',
-        data.answer,
-        '---',
-        data.params,
-        '===',
-      ].join("\n")
-      window.MathJax.typeset([$draft]);
-    };
+      const previewEditor = (e) => {
+        const data = {
+          problem: $problem.value.trim(),
+          solution: $solution.value.trim(),
+          answer: $answer.value.trim(),
+          params: $params.value.trim(),
+        };
+        $draft.innerHTML = generateItem(ALL, data);
+        output.value = [
+          data.problem,
+          "---",
+          data.solution,
+          "---",
+          data.answer,
+          "---",
+          data.params,
+          "===",
+        ].join("\n");
+        window.MathJax.typeset([$draft]);
+      };
 
-    generateTest.addEventListener("click", getGenerator(TEST));
-    generateAll.addEventListener("click", getGenerator(ALL));
+      generateTest.addEventListener("click", getGenerator(TEST));
+      generateAll.addEventListener("click", getGenerator(ALL));
 
-    $problem.addEventListener("input", previewEditor);
-    $solution.addEventListener("input", previewEditor);
-    $answer.addEventListener("input", previewEditor);
-    $params.addEventListener("input", previewEditor);
-  </script>
-</body>
+      $problem.addEventListener("input", previewEditor);
+      $solution.addEventListener("input", previewEditor);
+      $answer.addEventListener("input", previewEditor);
+      $params.addEventListener("input", previewEditor);
+    </script>
+  </body>
+</html>
