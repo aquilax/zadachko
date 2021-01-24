@@ -143,7 +143,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         return {
           problem: (problem || "").trim(),
           solution: (solution || "").trim(),
-          answer: (answer || "").trim(),
+          answer: formatParam((answer || "").trim()),
           params: params,
         };
       };
