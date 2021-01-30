@@ -94,6 +94,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           <br />
           <button id="generate-test">Генерирай тест</button>
           <button id="generate-all">Генерирай всичко</button>
+          <button id="generate-all-variants">Генерирай всички варианти</button>
           <button id="print" onclick="window.print();">Печат</button>
         </details>
       </section>
@@ -109,11 +110,13 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
 
       const generateTest = document.querySelector("#generate-test");
       const generateAll = document.querySelector("#generate-all");
+      const generateAllVariants = document.querySelector("#generate-all-variants");
       const template = document.querySelector("#template");
       const $preview = document.querySelector("#preview");
 
       const TEST = 0;
       const ALL = 1;
+      const ALL_VARIANTS = 2;
       const PARAM_SEPARATOR = ';';
       const PARTS_SEPARATOR = '---';
       const TASKS_SEPARATOR = "===";
@@ -151,25 +154,31 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         };
       };
 
+      const renderTask = (body, par, generatorType) =>
+        generatorType === ALL_VARIANTS
+          ?  par.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
+          : `<div class="task">${process(body, getRandom(par))}</div>`
+
       const generateItem = (
+        itemIndex,
         generatorType,
         { problem, solution, answer, params }
       ) => {
         const par = getParams(params.trim());
         let bodyElements = [];
         if (generatorType === TEST) {
-          bodyElements = [`<h3>Задача</h3> ${problem}`];
+          bodyElements = [`<h3>Задача ${itemIndex}</h3> ${problem}`];
         }
-        if (generatorType === ALL) {
+        if ([ALL, ALL_VARIANTS].includes(generatorType)) {
           bodyElements = [
-            `<h3>Задача</h3> ${problem}`,
+            `<h3>Задача ${itemIndex}</h3> ${problem}`,
             `<h4>Решение</h4> ${solution}`,
             `<h4>Отговор</h4> ${answer}`,
           ];
         }
         const body = bodyElements.filter((v) => v).join("\n");
         return par
-          ? `<div class="task">${process(body, getRandom(par))}</div>`
+          ? renderTask(body, par, generatorType)
           : tmpl;
       };
 
@@ -177,10 +186,12 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         e.preventDefault();
         const text = template.value.trim();
         const tasks = text.split(TASKS_SEPARATOR);
+        let taskIndex = 0;
         $preview.innerHTML = tasks
           .map((t) => {
             if (t.trim()) {
-              return generateItem(generatorType, getParts(t.trim()));
+              taskIndex++;
+              return generateItem(taskIndex, generatorType, getParts(t.trim()));
             }
             return "";
           })
@@ -196,7 +207,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           answer: $answer.value.trim(),
           params: $params.value.trim(),
         };
-        $draft.innerHTML = generateItem(ALL, data);
+        $draft.innerHTML = generateItem(1, ALL, data);
         output.value = [
           data.problem,
           PARTS_SEPARATOR,
@@ -212,6 +223,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
 
       generateTest.addEventListener("click", getGenerator(TEST));
       generateAll.addEventListener("click", getGenerator(ALL));
+      generateAllVariants.addEventListener("click", getGenerator(ALL_VARIANTS));
 
       $problem.addEventListener("input", previewEditor);
       $solution.addEventListener("input", previewEditor);
