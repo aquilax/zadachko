@@ -93,6 +93,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           </label>
           <br />
           <button id="generate-test">Генерирай тест</button>
+          <button id="generate-answers">Генерирай отговори</button>
           <button id="generate-all">Генерирай всичко</button>
           <button id="generate-all-variants">Генерирай всички варианти</button>
           <button id="print" onclick="window.print();">Печат</button>
@@ -109,6 +110,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       const $output = document.querySelector("#output");
 
       const generateTest = document.querySelector("#generate-test");
+      const generateAnswers = document.querySelector("#generate-answers");
       const generateAll = document.querySelector("#generate-all");
       const generateAllVariants = document.querySelector("#generate-all-variants");
       const template = document.querySelector("#template");
@@ -117,6 +119,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       const TEST = 0;
       const ALL = 1;
       const ALL_VARIANTS = 2;
+      const ANSWERS = 3;
       const PARAM_SEPARATOR = ';';
       const PARTS_SEPARATOR = '---';
       const TASKS_SEPARATOR = "===";
@@ -168,6 +171,9 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         let bodyElements = [];
         if (generatorType === TEST) {
           bodyElements = [`<h3>Задача ${itemIndex}</h3> ${problem}`];
+        }
+        if (generatorType === ANSWERS) {
+          bodyElements = [`<p><b>Задача ${itemIndex}</b>: ${answer}</p>`];
         }
         if ([ALL, ALL_VARIANTS].includes(generatorType)) {
           bodyElements = [
@@ -224,6 +230,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       generateTest.addEventListener("click", getGenerator(TEST));
       generateAll.addEventListener("click", getGenerator(ALL));
       generateAllVariants.addEventListener("click", getGenerator(ALL_VARIANTS));
+      generateAnswers.addEventListener("click", getGenerator(ANSWERS));
 
       $problem.addEventListener("input", previewEditor);
       $solution.addEventListener("input", previewEditor);
