@@ -92,11 +92,17 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
             >
           </label>
           <br />
-          <button id="generate-test">Генерирай тест</button>
-          <button id="generate-answers">Генерирай отговори</button>
-          <button id="generate-all">Генерирай всичко</button>
-          <button id="generate-all-variants">Генерирай всички варианти</button>
-          <button id="print" onclick="window.print();">Печат</button>
+          <p>
+            <button id="generate-test">Генерирай тест</button>
+            <button id="generate-answers">Генерирай отговори</button>
+            <button id="generate-all">Генерирай всичко</button>
+            <button id="generate-all-variants">Генерирай всички варианти</button>
+          </p>
+          <p>
+            <button id="randomize">Разбъркай</button>
+            <input id="seed" type="text" readonly size="2"/>
+            <button id="print" onclick="window.print();">Печат</button>
+          </p>
         </details>
       </section>
       <div id="preview" class="preview"></div>
@@ -108,6 +114,8 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       const $params = document.querySelector("#params");
       const $draft = document.querySelector("#draft");
       const $output = document.querySelector("#output");
+      const $randomize = document.querySelector("#randomize");
+      const $seed = document.querySelector("#seed");
 
       const generateTest = document.querySelector("#generate-test");
       const generateAnswers = document.querySelector("#generate-answers");
@@ -124,6 +132,33 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       const PARTS_SEPARATOR = '---';
       const TASKS_SEPARATOR = "===";
 
+      let _seed = 0;
+
+      const getNewSeed = () => Math.floor(Date.now() * Math.random() % 100000);
+      const getCurrentSeed = () => _seed;
+      const updateSeed = seed => {
+        // window.location.hash = seed;
+        $seed.value = seed;
+        _seed = seed;
+      };
+
+      updateSeed(window.location.hash ? parseInt(window.location.hash.substring(1)) : getNewSeed());
+
+      // https://stackoverflow.com/a/19301306
+      const getSeededRandom = seed => {
+        const mask = 0xffffffff;
+        let m_w = (123456789 + seed) & mask;
+        let m_z = (987654321 - seed) & mask;
+
+        return () => {
+          m_z = (36969 * (m_z & 65535) + (m_z >> 16)) & mask;
+          m_w = (18000 * (m_w & 65535) + (m_w >> 16)) & mask;
+          var result = ((m_z << 16) + (m_w & 65535)) >>> 0;
+          result /= 4294967296;
+          return result;
+        }
+      }
+
       const process = (text, params) =>
         Object.keys(params).reduce((p, k) => {
           return p.replaceAll(k, params[k]);
@@ -139,8 +174,8 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           }, {})
         );
 
-      const getRandom = (items) =>
-        items[Math.floor(Math.random() * items.length)];
+      const getRandom = (items, seededRand) =>
+        items[Math.floor(seededRand() * items.length)];
 
       const getParts = (text) => {
         const a = text.split(PARTS_SEPARATOR);
@@ -157,17 +192,18 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
         };
       };
 
-      const renderTask = (body, par, generatorType) =>
+      const renderTask = (body, allParams, pickedParams, generatorType) =>
         generatorType === ALL_VARIANTS
-          ?  par.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
-          : `<div class="task">${process(body, getRandom(par))}</div>`
+          ?  allParams.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
+          : `<div class="task">${process(body, pickedParams)}</div>`
 
       const generateItem = (
         itemIndex,
         generatorType,
-        { problem, solution, answer, params }
+        { problem, solution, answer, params },
+        seededRand
       ) => {
-        const par = getParams(params.trim());
+        const allParams = getParams(params.trim());
         let bodyElements = [];
         if (generatorType === TEST) {
           bodyElements = [`<h3>Задача ${itemIndex}</h3> ${problem}`];
@@ -183,13 +219,15 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           ];
         }
         const body = bodyElements.filter((v) => v).join("\n");
-        return par
-          ? renderTask(body, par, generatorType)
+        const pickedParams = getRandom(allParams, seededRand)
+        return allParams
+          ? renderTask(body, allParams, pickedParams, generatorType)
           : tmpl;
       };
 
       const getGenerator = (generatorType) => (e) => {
         e.preventDefault();
+        const seededRand = getSeededRandom(getCurrentSeed());
         const text = template.value.trim();
         const tasks = text.split(TASKS_SEPARATOR);
         let taskIndex = 0;
@@ -197,7 +235,7 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           .map((t) => {
             if (t.trim()) {
               taskIndex++;
-              return generateItem(taskIndex, generatorType, getParts(t.trim()));
+              return generateItem(taskIndex, generatorType, getParts(t.trim()), seededRand);
             }
             return "";
           })
@@ -213,7 +251,8 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           answer: $answer.value.trim(),
           params: $params.value.trim(),
         };
-        $draft.innerHTML = generateItem(1, ALL, data);
+        const seededRand = getSeededRandom(getCurrentSeed());
+        $draft.innerHTML = generateItem(1, ALL, data, seededRand);
         output.value = [
           data.problem,
           PARTS_SEPARATOR,
@@ -232,10 +271,16 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
       generateAllVariants.addEventListener("click", getGenerator(ALL_VARIANTS));
       generateAnswers.addEventListener("click", getGenerator(ANSWERS));
 
+      $randomize.addEventListener("click", e => {
+        e.preventDefault();
+        updateSeed(getNewSeed());
+      });
+
       $problem.addEventListener("input", previewEditor);
       $solution.addEventListener("input", previewEditor);
       $answer.addEventListener("input", previewEditor);
       $params.addEventListener("input", previewEditor);
+
     </script>
   </body>
 </html>
