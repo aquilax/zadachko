@@ -207,6 +207,15 @@ $2=11.4-$1
           ?  allParams.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
           : `<div class="task">${process(body, pickedParams)}</div>`
 
+
+      const evalExpression = (expression, name) => {
+        try {
+            return eval(expression);
+        } catch (e) {
+            console.log(e);
+            return `EXPRESSION ERROR[${name}: ${e.message}]`;
+        }
+      }
       const getRandomFloat = seededRand => (seededRand() * 200).toPrecision(2) - 100;
 
       const getDynamicParams = (allParams, seededRand) => {
@@ -228,7 +237,7 @@ $2=11.4-$1
           const resolvedExpression = a.reduce(
             (acc, i) => typeof acc === 'string' ? acc.replaceAll(i.name, `(${i.expression})`) : acc,
             item.expression);
-          return {...item, expression: eval(resolvedExpression)}
+          return {...item, expression: evalExpression(resolvedExpression, item.name)}
         })
         // // get values
         .reduce((acc, i) => {
