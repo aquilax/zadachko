@@ -88,6 +88,16 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
 5;6;1
 6;7;1
 ===
+Извършете събирането
+$$ $1 + $2 $$
+---
+$$ $1 + $2 = 11,4 $$
+---
+$$ 11,4 $$
+---
+$1=RAND()
+$2=11.4-$1
+===
               </textarea
             >
           </label>
@@ -197,13 +207,42 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           ?  allParams.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
           : `<div class="task">${process(body, pickedParams)}</div>`
 
+      const getRandomFloat = seededRand => (seededRand() * 200).toPrecision(2) - 100;
+
+      const getDynamicParams = (allParams, seededRand) => {
+        return allParams.split("\n").map(line => {
+          const [name, exp] = line.split('=');
+          return {name: name.trim(), expression: exp.trim()};
+        })
+        // first pass evaluate functions
+        .map(item => {
+          if (item.expression.startsWith('RAND()')) {
+            return {...item, expression: getRandomFloat(seededRand)}
+          } else {
+            return item;
+          }
+        })
+        // final pass evaluate
+        .map((item, _, a)  => {
+          // replace placeholders
+          const resolvedExpression = a.reduce(
+            (acc, i) => typeof acc === 'string' ? acc.replaceAll(i.name, `(${i.expression})`) : acc,
+            item.expression);
+          return {...item, expression: eval(resolvedExpression)}
+        })
+        // // get values
+        .reduce((acc, i) => {
+          acc[i.name] = parseFloat(i.expression) > 0 ? i.expression : `(${i.expression})`;
+          return acc;
+        }, {});
+      };
+
       const generateItem = (
         itemIndex,
         generatorType,
         { problem, solution, answer, params },
         seededRand
       ) => {
-        const allParams = getParams(params.trim());
         let bodyElements = [];
         if (generatorType === TEST) {
           bodyElements = [`<h3>Задача ${itemIndex}</h3> ${problem}`];
@@ -219,7 +258,12 @@ $$ за x = $2 , A = ( $2  - $1 )^2 = 1 $$
           ];
         }
         const body = bodyElements.filter((v) => v).join("\n");
-        const pickedParams = getRandom(allParams, seededRand)
+
+        const allParams = getParams(params.trim());
+        const pickedParams = (allParams && params.trim()[0] == '$')
+          // dynamic params must start with $
+          ? getDynamicParams(params.trim(), seededRand)
+          : getRandom(allParams, seededRand);
         return allParams
           ? renderTask(body, allParams, pickedParams, generatorType)
           : tmpl;
