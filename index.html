@@ -123,7 +123,13 @@ $2=18-$1
           </p>
           <p>
             <button id="randomize">Разбъркай</button>
-            <input id="seed" type="number" min="0" max="999999" style="width: 7ch" />
+            <input
+              id="seed"
+              type="number"
+              min="0"
+              max="999999"
+              style="width: 7ch"
+            />
             <button id="print" onclick="window.print();">Печат</button>
           </p>
         </details>
@@ -233,7 +239,7 @@ $2=18-$1
 
       const evalExpression = (expression, name) => {
         try {
-          const n = eval(expression)
+          const n = eval(expression);
           // round non integer results
           return Number(n) === n && n % 1 !== 0 ? n.toPrecision(2) : n;
         } catch (e) {
@@ -243,12 +249,13 @@ $2=18-$1
       };
 
       const getExpParams = (exp) => {
-        return exp ? exp.split(",").map((p) => p.trim())
-          : [];
+        return exp ? exp.split(",").map((p) => p.trim()) : [];
       };
 
-      const strToFloatDef = (s, def) => !isNaN(parseFloat(s)) ? parseFloat(s) : def;
-      const strToIntDef = (s, def) => !isNaN(parseInt(s, 10)) ? parseInt(s, 10) : def;
+      const strToFloatDef = (s, def) =>
+        !isNaN(parseFloat(s)) ? parseFloat(s) : def;
+      const strToIntDef = (s, def) =>
+        !isNaN(parseInt(s, 10)) ? parseInt(s, 10) : def;
 
       const getRandomFloat = (params, seededRand) => {
         const [minp, maxp] = params;
@@ -302,9 +309,25 @@ $2=18-$1
           // get parameter values
           .reduce((acc, i) => {
             acc[i.name] =
-              parseFloat(i.expression) > 0 ? formatParam(i.expression + '') : `(${formatParam(i.expression + '')})`;
+              parseFloat(i.expression) > 0
+                ? formatParam(i.expression + "")
+                : `(${formatParam(i.expression + "")})`;
             return acc;
           }, {});
+
+      const getParamsFromText = (params, seededRand) => {
+        if (params[0] === "$") {
+          // Dynamic params
+          const dynamic = getDynamicParams(
+            params,
+            getSeededFunctions(seededRand)
+          );
+          return [dynamic, [dynamic]];
+        }
+        // Manual params params
+        const allParams = getParams(params);
+        return [getRandom(allParams, seededRand), allParams];
+      };
 
       const generateItem = (
         itemIndex,
@@ -328,12 +351,10 @@ $2=18-$1
         }
         const body = bodyElements.filter((v) => v).join("\n");
 
-        const allParams = getParams(params.trim());
-        const pickedParams =
-          allParams && params.trim()[0] == "$"
-            ? // dynamic params must start with $
-              getDynamicParams(params.trim(), getSeededFunctions(seededRand))
-            : getRandom(allParams, seededRand);
+        const [pickedParams, allParams] = getParamsFromText(
+          params.trim(),
+          seededRand
+        );
         return allParams
           ? renderTask(body, allParams, pickedParams, generatorType)
           : tmpl;
@@ -402,7 +423,6 @@ $2=18-$1
       $solution.addEventListener("input", previewEditor);
       $answer.addEventListener("input", previewEditor);
       $params.addEventListener("input", previewEditor);
-
     </script>
   </body>
 </html>
