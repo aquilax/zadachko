@@ -98,6 +98,17 @@ $$ 11,4 $$
 $1=RAND()
 $2=11.4-$1
 ===
+Извършете събирането
+$$ $1 + $2 $$
+---
+$$ $1 + $2 = 11 $$
+---
+$$ 18 $$
+---
+$1=RAND_INT(3, 15)
+$2=18-$1
+===
+
               </textarea
             >
           </label>
@@ -212,11 +223,29 @@ $2=11.4-$1
         try {
             return eval(expression);
         } catch (e) {
-            console.log(e);
+            console.error(e);
             return `EXPRESSION ERROR[${name}: ${e.message}]`;
         }
       }
-      const getRandomFloat = seededRand => (seededRand() * 200).toPrecision(2) - 100;
+
+      const getExpParams = (exp) => {
+        const params = exp.match(/\(([\d,\s]*)\)/)
+        return params && params[1] ? params[1].split(',').map(p => p.trim()) : [];
+      }
+
+      const getRandomFloat = (exp, seededRand) => {
+        const [minp, maxp] = getExpParams(exp);
+        const min = parseFloat(minp) || -100
+        const max = parseFloat(maxp) || 100
+        return (seededRand() * (max - min) + min).toPrecision(2);
+      }
+
+      const getRandomInt = (exp, seededRand) => {
+        const [minp, maxp] = getExpParams(exp);
+        const min = parseInt(minp, 10) || -100;
+        const max = parseInt(maxp, 10) || 100;
+        return Math.floor(seededRand() * (max - min + 1)) + min;
+      }
 
       const getDynamicParams = (allParams, seededRand) => {
         return allParams.split("\n").map(line => {
@@ -225,8 +254,10 @@ $2=11.4-$1
         })
         // first pass evaluate functions
         .map(item => {
-          if (item.expression.startsWith('RAND()')) {
-            return {...item, expression: getRandomFloat(seededRand)}
+          if (item.expression.startsWith('RAND(')) {
+            return {...item, expression: getRandomFloat(item.expression, seededRand)}
+          } else if (item.expression.startsWith('RAND_INT(')){
+            return {...item, expression: getRandomInt(item.expression, seededRand)}
           } else {
             return item;
           }
