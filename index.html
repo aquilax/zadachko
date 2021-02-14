@@ -117,11 +117,13 @@ $2=18-$1
             <button id="generate-test">Генерирай тест</button>
             <button id="generate-answers">Генерирай отговори</button>
             <button id="generate-all">Генерирай всичко</button>
-            <button id="generate-all-variants">Генерирай всички варианти</button>
+            <button id="generate-all-variants">
+              Генерирай всички варианти
+            </button>
           </p>
           <p>
             <button id="randomize">Разбъркай</button>
-            <input id="seed" type="text" readonly size="2"/>
+            <input id="seed" type="text" readonly style="width: 5ch" />
             <button id="print" onclick="window.print();">Печат</button>
           </p>
         </details>
@@ -141,7 +143,9 @@ $2=18-$1
       const generateTest = document.querySelector("#generate-test");
       const generateAnswers = document.querySelector("#generate-answers");
       const generateAll = document.querySelector("#generate-all");
-      const generateAllVariants = document.querySelector("#generate-all-variants");
+      const generateAllVariants = document.querySelector(
+        "#generate-all-variants"
+      );
       const template = document.querySelector("#template");
       const $preview = document.querySelector("#preview");
 
@@ -149,24 +153,29 @@ $2=18-$1
       const ALL = 1;
       const ALL_VARIANTS = 2;
       const ANSWERS = 3;
-      const PARAM_SEPARATOR = ';';
-      const PARTS_SEPARATOR = '---';
+      const PARAM_SEPARATOR = ";";
+      const PARTS_SEPARATOR = "---";
       const TASKS_SEPARATOR = "===";
 
       let _seed = 0;
 
-      const getNewSeed = () => Math.floor(Date.now() * Math.random() % 100000);
+      const getNewSeed = () =>
+        Math.floor((Date.now() * Math.random()) % 100000);
       const getCurrentSeed = () => _seed;
-      const updateSeed = seed => {
+      const updateSeed = (seed) => {
         // window.location.hash = seed;
         $seed.value = seed;
         _seed = seed;
       };
 
-      updateSeed(window.location.hash ? parseInt(window.location.hash.substring(1)) : getNewSeed());
+      updateSeed(
+        window.location.hash
+          ? parseInt(window.location.hash.substring(1))
+          : getNewSeed()
+      );
 
       // https://stackoverflow.com/a/19301306
-      const getSeededRandom = seed => {
+      const getSeededRandom = (seed) => {
         const mask = 0xffffffff;
         let m_w = (123456789 + seed) & mask;
         let m_z = (987654321 - seed) & mask;
@@ -177,8 +186,8 @@ $2=18-$1
           var result = ((m_z << 16) + (m_w & 65535)) >>> 0;
           result /= 4294967296;
           return result;
-        }
-      }
+        };
+      };
 
       const process = (text, params) =>
         Object.keys(params).reduce((p, k) => {
@@ -215,67 +224,82 @@ $2=18-$1
 
       const renderTask = (body, allParams, pickedParams, generatorType) =>
         generatorType === ALL_VARIANTS
-          ?  allParams.reduce((acc, params) => acc + `<div class="task">${process(body, params)}</div>`, '')
-          : `<div class="task">${process(body, pickedParams)}</div>`
-
+          ? allParams.reduce(
+              (acc, params) =>
+                acc + `<div class="task">${process(body, params)}</div>`,
+              ""
+            )
+          : `<div class="task">${process(body, pickedParams)}</div>`;
 
       const evalExpression = (expression, name) => {
         try {
-            return eval(expression);
+          return eval(expression);
         } catch (e) {
-            console.error(e);
-            return `EXPRESSION ERROR[${name}: ${e.message}]`;
+          console.error(e);
+          return `EXPRESSION ERROR[${name}: ${e.message}]`;
         }
-      }
+      };
 
       const getExpParams = (exp) => {
-        const params = exp.match(/\(([\d,\s]*)\)/)
-        return params && params[1] ? params[1].split(',').map(p => p.trim()) : [];
-      }
+        return exp ? exp.split(",").map((p) => p.trim())
+          : [];
+      };
 
-      const getRandomFloat = (exp, seededRand) => {
-        const [minp, maxp] = getExpParams(exp);
-        const min = parseFloat(minp) || -100
-        const max = parseFloat(maxp) || 100
+      const getRandomFloat = (params, seededRand) => {
+        const [minp, maxp] = params;
+        const min = parseFloat(minp) || -100;
+        const max = parseFloat(maxp) || 100;
         return (seededRand() * (max - min) + min).toPrecision(2);
-      }
+      };
 
-      const getRandomInt = (exp, seededRand) => {
-        const [minp, maxp] = getExpParams(exp);
+      const getRandomInt = (params, seededRand) => {
+        const [minp, maxp] = params;
         const min = parseInt(minp, 10) || -100;
         const max = parseInt(maxp, 10) || 100;
         return Math.floor(seededRand() * (max - min + 1)) + min;
-      }
-
-      const getDynamicParams = (allParams, seededRand) => {
-        return allParams.split("\n").map(line => {
-          const [name, exp] = line.split('=');
-          return {name: name.trim(), expression: exp.trim()};
-        })
-        // first pass evaluate functions
-        .map(item => {
-          if (item.expression.startsWith('RAND(')) {
-            return {...item, expression: getRandomFloat(item.expression, seededRand)}
-          } else if (item.expression.startsWith('RAND_INT(')){
-            return {...item, expression: getRandomInt(item.expression, seededRand)}
-          } else {
-            return item;
-          }
-        })
-        // final pass evaluate
-        .map((item, _, a)  => {
-          // replace placeholders
-          const resolvedExpression = a.reduce(
-            (acc, i) => typeof acc === 'string' ? acc.replaceAll(i.name, `(${i.expression})`) : acc,
-            item.expression);
-          return {...item, expression: evalExpression(resolvedExpression, item.name)}
-        })
-        // // get values
-        .reduce((acc, i) => {
-          acc[i.name] = parseFloat(i.expression) > 0 ? i.expression : `(${i.expression})`;
-          return acc;
-        }, {});
       };
+
+      const getSeededFunctions = (seededRand) => ({
+        RAND: (params) => getRandomFloat(params, seededRand),
+        RAND_INT: (params) => getRandomInt(params, seededRand),
+        RAND_FROM: (params) => getRandom(params, seededRand),
+      });
+
+      const getDynamicParams = (allParams, seededFunctions) =>
+        allParams
+          .split("\n")
+          // {name, expression_
+          .map((line) => {
+            const [name, exp] = line.split("=");
+            return { name: name.trim(), expression: exp.trim() };
+          })
+          // execute functions
+          .map((item) => ({
+            ...item,
+            expression: item.expression.replace(
+              /(([A-Z_]*)\(([\d\s\.\,]*)\))/g,
+              (_, __, functionName, params) =>
+                seededFunctions[functionName](getExpParams(params.trim()))
+            ),
+          }))
+          // final pass evaluate
+          .map((item, _, a) => {
+            // replace placeholders
+            const resolvedExpression = a.reduce(
+              (acc, i) => acc.replaceAll(i.name, `(${i.expression})`),
+              item.expression
+            );
+            return {
+              ...item,
+              expression: evalExpression(resolvedExpression, item.name),
+            };
+          })
+          // get parameter values
+          .reduce((acc, i) => {
+            acc[i.name] =
+              parseFloat(i.expression) > 0 ? formatParam(i.expression + '') : `(${formatParam(i.expression + '')})`;
+            return acc;
+          }, {});
 
       const generateItem = (
         itemIndex,
@@ -300,10 +324,11 @@ $2=18-$1
         const body = bodyElements.filter((v) => v).join("\n");
 
         const allParams = getParams(params.trim());
-        const pickedParams = (allParams && params.trim()[0] == '$')
-          // dynamic params must start with $
-          ? getDynamicParams(params.trim(), seededRand)
-          : getRandom(allParams, seededRand);
+        const pickedParams =
+          allParams && params.trim()[0] == "$"
+            ? // dynamic params must start with $
+              getDynamicParams(params.trim(), getSeededFunctions(seededRand))
+            : getRandom(allParams, seededRand);
         return allParams
           ? renderTask(body, allParams, pickedParams, generatorType)
           : tmpl;
@@ -319,7 +344,12 @@ $2=18-$1
           .map((t) => {
             if (t.trim()) {
               taskIndex++;
-              return generateItem(taskIndex, generatorType, getParts(t.trim()), seededRand);
+              return generateItem(
+                taskIndex,
+                generatorType,
+                getParts(t.trim()),
+                seededRand
+              );
             }
             return "";
           })
@@ -355,7 +385,7 @@ $2=18-$1
       generateAllVariants.addEventListener("click", getGenerator(ALL_VARIANTS));
       generateAnswers.addEventListener("click", getGenerator(ANSWERS));
 
-      $randomize.addEventListener("click", e => {
+      $randomize.addEventListener("click", (e) => {
         e.preventDefault();
         updateSeed(getNewSeed());
       });
@@ -364,7 +394,6 @@ $2=18-$1
       $solution.addEventListener("input", previewEditor);
       $answer.addEventListener("input", previewEditor);
       $params.addEventListener("input", previewEditor);
-
     </script>
   </body>
 </html>
