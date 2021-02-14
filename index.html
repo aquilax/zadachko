@@ -247,17 +247,20 @@ $2=18-$1
           : [];
       };
 
+      const strToFloatDef = (s, def) => !isNaN(parseFloat(s)) ? parseFloat(s) : def;
+      const strToIntDef = (s, def) => !isNaN(parseInt(s, 10)) ? parseInt(s, 10) : def;
+
       const getRandomFloat = (params, seededRand) => {
         const [minp, maxp] = params;
-        const min = parseFloat(minp) || -100;
-        const max = parseFloat(maxp) || 100;
+        const min = strToFloatDef(minp, -100);
+        const max = strToFloatDef(maxp, +100);
         return (seededRand() * (max - min) + min).toPrecision(2).toString();
       };
 
       const getRandomInt = (params, seededRand) => {
         const [minp, maxp] = params;
-        const min = parseInt(minp, 10) || -100;
-        const max = parseInt(maxp, 10) || 100;
+        const min = strToIntDef(minp, -100);
+        const max = strToIntDef(maxp, +100);
         return (Math.floor(seededRand() * (max - min + 1)) + min).toString();
       };
 
